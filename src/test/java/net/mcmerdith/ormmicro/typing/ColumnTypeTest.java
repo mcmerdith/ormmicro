@@ -12,11 +12,16 @@ import java.util.function.Supplier;
 public class ColumnTypeTest {
     private static final Random random = new Random();
 
-    private static final Supplier<SqlType.Size> randomSizeSupplier = () -> SqlType.Size.values()[random.nextInt(SqlType.Size.values().length)];
-    private static final Supplier<Integer> randomLengthSupplier = () -> random.nextInt(255) + 1;
-    private static final Supplier<Integer> randomDigitSupplier = () -> random.nextInt(50) + 1;
-    private static final Function<Integer, Integer> randomDecimalSupplier = (digits) -> random.nextInt(digits);
-    private static final Supplier<Integer> randomPrecisionSupplier = () -> random.nextInt(50);
+    private static int sizeOrdinal = -1;
+    private static int length = 0;
+    private static int digits = 1;
+    private static int precision = 0;
+
+    private static final Supplier<SqlType.Size> randomSizeSupplier = () -> SqlType.Size.values()[++sizeOrdinal % (SqlType.Size.values().length)];
+    private static final Supplier<Integer> randomLengthSupplier = () -> ++length;
+    private static final Supplier<Integer> randomDigitSupplier = () -> ++digits;
+    private static final Function<Integer, Integer> randomDecimalSupplier = random::nextInt;
+    private static final Supplier<Integer> randomPrecisionSupplier = () -> ++precision;
 
     private static <T> Supplier<T> getNullSupplier() {
         return () -> null;
@@ -46,23 +51,23 @@ public class ColumnTypeTest {
     }
 
     private static List<List<ColumnType>> typeTestGroup(int matchingGroupSize, SqlType type,
-                                                        boolean randomSize, boolean randomLength, boolean randomDigits,
-                                                        boolean randomDecimals, boolean randomPrecision) {
+                                                        boolean varyMGTypeSize, boolean varyMGLength, boolean varyMGDigits,
+                                                        boolean varyMGDecimals, boolean varyMGPrecision) {
         List<List<ColumnType>> typeGroups = new ArrayList<>();
 
-        Supplier<SqlType.Size> size = randomSize ? getNullSupplier()
+        Supplier<SqlType.Size> size = varyMGTypeSize ? getNullSupplier()
                 : randomSizeSupplier;
-        Supplier<Integer> length = randomLength ? getNullSupplier()
+        Supplier<Integer> length = varyMGLength ? getNullSupplier()
                 : randomLengthSupplier;
-        Supplier<Integer> digits = randomDigits ? getNullSupplier()
+        Supplier<Integer> digits = varyMGDigits ? getNullSupplier()
                 : randomDigitSupplier;
-        Function<Integer, Integer> decimals = randomDecimals ? (i) -> null
+        Function<Integer, Integer> decimals = varyMGDecimals ? (i) -> null
                 : randomDecimalSupplier;
-        Supplier<Integer> precision = randomPrecision ? getNullSupplier()
+        Supplier<Integer> precision = varyMGPrecision ? getNullSupplier()
                 : randomPrecisionSupplier;
 
         for (int i = 0; i < matchingGroupSize; i++) {
-            int d = digits.get();
+            Integer d = digits.get();
             typeGroups.add(
                     typeGroup(matchingGroupSize, type, size.get(), length.get(), d, decimals.apply(d), precision.get())
             );
@@ -74,7 +79,7 @@ public class ColumnTypeTest {
     private static List<List<ColumnType>> integerTestGroups = new ArrayList<>();
 
     static {
-        integerTestGroups = typeTestGroup(3, 3, SqlType.INTEGER);
+        integerTestGroups = typeTestGroup(3, SqlType.INTEGER, false, false, true, true, true);
     }
 
     @Test
@@ -84,16 +89,10 @@ public class ColumnTypeTest {
 
     @Test
     public void testHashCode() {
-        assertEquals(INT_1_1, INT_1_2);
-        assertEquals(INT_1_1.hashCode(), INT_1_3.hashCode());
-        assertEquals(INT_2_1.hashCode(), INT_2_2.hashCode());
-        assertEquals(INT_3_1.hashCode(), INT_3_2.hashCode());
-        assertNotEquals(INT_1_1.hashCode(), INT_2_1.hashCode());
-        assertNotEquals(INT_1_1.hashCode(), INT_3_1.hashCode());
-        assertNotEquals(INT_2_1.hashCode(), INT_3_1.hashCode());
+
     }
 
     public <T> void assertTestGroupEquality(List<List<T>> testGroups) {
-        for (int testGroupNumber)
+        for (int gNumber = 0; gNumber < testGroups.size(); gNumber++);
     }
 }

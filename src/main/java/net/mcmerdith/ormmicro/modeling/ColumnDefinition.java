@@ -30,15 +30,49 @@ public class ColumnDefinition {
     private String defaultColumnValue = "";
 
     /*
+    Typing
+     */
+
+    // Implicit annotatedField.getType();
+    private Class<?> convertedType = null;
+    private Class<?> collectionType = null;
+
+    /**
+     * Get the final type of this field, after collection unwrapping (if needed) and type conversion (if needed)
+     * and foreign key mapping
+     *
+     * @return The final type of this field that will be mapped to the database
+     */
+    public Class<?> getFieldType() {
+        if (foreignReferencedColumnDefinition != null) return foreignReferencedColumnDefinition.getFieldType();
+        if (convertedType != null) return convertedType;
+        if (collectionType != null) return collectionType;
+        return annotatedField.getType();
+    }
+
+    /**
+     * Get the final column type.
+     *
+     * @return The defined type, foreign column type if present, else the type implied by the field
+     * ({@link ColumnDefinition#getFieldType()}), else null
+     */
+    public ColumnType getColumnType() {
+        if (annotationColumnType != null && annotationColumnType.type != SqlType.AUTO) return annotationColumnType;
+        if (foreignReferencedColumnDefinition != null) return foreignReferencedColumnDefinition.getColumnType();
+        if (getFieldType().isEnum()) return enumStorageMode.getType();
+        return session.getTypeMapper().javaToSqlType(getFieldType());
+    }
+
+    /*
     Constraints
      */
+
+    private boolean unique = false;
 
     private boolean primary = false;
     private boolean autoIncrement = false;
 
     private boolean nullable = true;
-
-    private boolean unique = false;
 
     private boolean foreign = false;
     private String foreignReference = null;
@@ -61,19 +95,19 @@ public class ColumnDefinition {
     private boolean array = false;
 
     private boolean collection = false;
-    private Class<?> collectionType = null;
 
     private Supplier<ElementCollectionTable<?>> collectionTable = null;
 
     /*
     Data converters
      */
+
     private final List<AttributeConverter<?, ?>> converters = new ArrayList<>();
-    private Class<?> convertedType = null;
 
     /*
     Objects used to build this column
      */
+
     private final SessionFactory session;
     private final SqlModel<?> model;
     private final Field annotatedField;
@@ -89,9 +123,11 @@ public class ColumnDefinition {
         isTransient = transientAnnotation != null;
         if (isTransient) return;
 
+        this.annotatedField.setAccessible(true);
+
         Column column = annotatedField.getDeclaredAnnotation(Column.class);
 
-        if (column == null) {
+        if (column == null || StringUtils.isBlank(column.name())) {
             columnName = annotatedField.getName().toLowerCase();
         } else {
             columnName = column.name();
@@ -371,36 +407,6 @@ public class ColumnDefinition {
     }
 
     /*
-    Typing
-     */
-
-    /**
-     * Get the final type of this field, after collection unwrapping (if needed) and type conversion (if needed)
-     * and foreign key mapping
-     *
-     * @return The final type of this field that will be mapped to the database
-     */
-    public Class<?> getFieldType() {
-        if (foreignReferencedColumnDefinition != null) return foreignReferencedColumnDefinition.getFieldType();
-        if (convertedType != null) return convertedType;
-        if (collectionType != null) return collectionType;
-        return annotatedField.getType();
-    }
-
-    /**
-     * Get the final column type.
-     *
-     * @return The defined type, foreign column type if present, else the type implied by the field
-     * ({@link ColumnDefinition#getFieldType()}), else null
-     */
-    public ColumnType getColumnType() {
-        if (annotationColumnType != null && annotationColumnType.type != SqlType.AUTO) return annotationColumnType;
-        if (foreignReferencedColumnDefinition != null) return foreignReferencedColumnDefinition.getColumnType();
-        if (getFieldType().isEnum()) return enumStorageMode.getType();
-        return session.getTypeMapper().javaToSqlType(getFieldType());
-    }
-
-    /*
      * Getters
      */
 
@@ -532,6 +538,23 @@ public class ColumnDefinition {
         return !converters.isEmpty();
     }
 
+    /*
+    Data Conversion
+     */
+
+    public Object getFieldValue(Object o) {
+        try {
+            // Get the referenced field on the foreign object
+            return annotatedField.get(o);
+        } catch (Exception e) {
+            OrmMicroLogger.instance().exception(e,
+                    String.format("Failed to get field `%s` on type '%s'",
+                            annotatedField.getName(),
+                            o.getClass().getSimpleName()));
+            return null;
+        }
+    }
+
     /**
      * Convert an object of this field's inherent type to this column's Sql type
      * using the Data Converters applied to this column
@@ -543,9 +566,11 @@ public class ColumnDefinition {
     public Object convertJavaToSql(Object o) {
         if (o == null) return null;
 
-        Object convert = o;
+        Object convert = applyConverterChain(o, converters);
 
-        if (o.getClass().isEnum()) {
+        if (convert == null) return null;
+
+        if (convert.getClass().isEnum()) {
             Enum<?> enumValue = (Enum<?>) o;
 
             switch (getEnumStorageMode()) {
@@ -559,7 +584,7 @@ public class ColumnDefinition {
             }
         }
 
-        return applyConverterChain(o, converters);
+        return convert;
     }
 
     /**

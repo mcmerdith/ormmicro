@@ -11,31 +11,26 @@ import java.util.stream.Stream;
 
 public class MappedSqlModel<T> {
     private final SqlModel<T> model;
+    private final T object;
     private final Map<String, Object> columns = new LinkedHashMap<>();
-    private final List<ElementCollectionTable<?>> collections = new ArrayList<>();
-    private final List<Object> foreignObjects = new ArrayList<>();
+    private final Map<String, List<Object>> foreignObjects = new HashMap<>();
 
     public MappedSqlModel(SessionFactory session, SqlModel<T> model, T object) {
         this.model = model;
+        this.object = object;
 
         model.getColumnDefinitions().forEach((field, column) -> {
             try {
-                String columnName = column.getName();
-
-                Field actualField = object.getClass().getDeclaredField(field);
-                // who cares what the intended visibility is anyway
-                actualField.setAccessible(true);
-
                 // Move any values from this column into a list for processing
                 List<Object> values = new ArrayList<>();
 
                 if (column.isArray()) {
-                    Object[] fieldArrayValues = (Object[]) actualField.get(object);
+                    Object[] fieldArrayValues = (Object[]) column.getFieldValue(object);
                     values.addAll(Arrays.asList(fieldArrayValues));
                 } else if (column.isCollection()) {
-                    values.addAll((Collection<?>) actualField.get(object));
+                    values.addAll((Collection<?>) column.getFieldValue(object));
                 } else {
-                    values.add(actualField.get(object));
+                    values.add(column.getFieldValue(object));
                 }
 
                 // Stream the non-null values
@@ -47,15 +42,12 @@ public class MappedSqlModel<T> {
                     if (foreignDefinition != null) {
                         // Column is being autodetected
                         // Map each object to the value of its primary key
+                        List<Object> fObjs = new ArrayList<>();
                         valueStream = valueStream.map(fObj -> {
-                            Object reference = extractForeignKeyReference(fObj, foreignDefinition.getField().getName());
-
-                            if (reference != null) {
-                                foreignObjects.add(fObj);
-                            }
-
-                            return reference;
+                            fObjs.add(fObj);
+                            return foreignDefinition.getFieldValue(fObj);
                         });
+                        foreignObjects.put(field, fObjs);
                     }
                 } else {
                     valueStream = valueStream.map(column::convertJavaToSql);
@@ -76,9 +68,9 @@ public class MappedSqlModel<T> {
                     //noinspection unchecked
                     cTable.merge(preparedValues);
 
-                    collections.add(cTable);
+                    columns.put(field, cTable);
                 } else {
-                    columns.put(columnName, preparedValues.stream().findFirst().orElse(null));
+                    columns.put(field, preparedValues.stream().findFirst().orElse(null));
                 }
             } catch (Exception e) {
                 OrmMicroLogger.instance().exception(e,
@@ -95,29 +87,19 @@ public class MappedSqlModel<T> {
         });
     }
 
-    private Object extractForeignKeyReference(Object object, String referenceField) {
-        try {
-            // Get the referenced field on the foreign object
-            Field foreignField = object.getClass().getDeclaredField(referenceField);
-            foreignField.setAccessible(true);
-            return foreignField.get(object);
-        } catch (Exception e) {
-            OrmMicroLogger.instance().exception(e,
-                    String.format("Failed to get foreign reference `%s` on type '%s'",
-                            referenceField,
-                            object.getClass().getSimpleName()));
-            return null;
-        }
+    /**
+     * Get a map of models associated with this object, mapped by their field name on the model
+     * @return A map of fieldName -> Associated Object
+     */
+    public Map<String, Object> getForeignObjects() {
+        return new HashMap<>(foreignObjects);
     }
 
-    public List<Object> getForeignObjects() {
-        return new ArrayList<>(foreignObjects);
-    }
-
-    public List<ElementCollectionTable<?>> getCollections() {
-        return new ArrayList<>(collections);
-    }
-
+    /**
+     * Get a map of column values, mapped by their field name on the model
+     * <p>Returned object may be an instance of {@link ElementCollectionTable}, signifying that the values should be stored in an associated table</p>
+     * @return A map of fieldName -> column value
+     */
     public Map<String, Object> getColumns() {
         return new LinkedHashMap<>(columns);
     }

@@ -7,6 +7,7 @@ import net.mcmerdith.ormmicro.typing.ISqlTypeMapper;
 import net.mcmerdith.ormmicro.typing.SqlDialect;
 
 import javax.annotation.Nonnull;
+import java.util.Properties;
 import java.util.logging.Level;
 
 public class SessionFactory {
@@ -63,6 +64,14 @@ public class SessionFactory {
 
         public Builder(@Nonnull HikariConfig hikariConfig) {
             this.hikariConfig = hikariConfig;
+        }
+
+        public void setConfiguration(HikariConfig hikariConfig) {
+            if (hikariConfig != null) this.hikariConfig = hikariConfig;
+        }
+
+        public void addDataSourceProperties(Properties properties) {
+            hikariConfig.getDataSourceProperties().putAll(properties);
         }
 
         public void setNamingStrategy(NamingStrategy strategy) {

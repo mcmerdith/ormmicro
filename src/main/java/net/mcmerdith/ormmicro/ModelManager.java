@@ -1,5 +1,6 @@
 package net.mcmerdith.ormmicro;
 
+import net.mcmerdith.ormmicro.modeling.MappedSqlModel;
 import net.mcmerdith.ormmicro.modeling.SqlModel;
 import net.mcmerdith.ormmicro.typing.SqlDialect;
 
@@ -40,7 +41,7 @@ public class ModelManager {
     /**
      * Register a model class with this manager
      * Class and declared fields will be traversed for annotations from the
-     * {@link org.wargamer2010.signshop.configuration.orm.annotations} package
+     * {@link net.mcmerdith.ormmicro.annotations} package
      *
      * @param model The model class to be registered
      */
@@ -59,5 +60,11 @@ public class ModelManager {
     public <T> SqlModel<T> getModel(Class<T> model) {
         if (!modelMappings.containsKey(model)) registerModel(model);
         return (SqlModel<T>) modelMappings.get(model);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> MappedSqlModel<T> mapObject(T object) {
+        SqlModel<T> model = getModel((Class<T>) object.getClass());
+        return model.mapObject(object);
     }
 }
