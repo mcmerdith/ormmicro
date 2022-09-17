@@ -1,21 +1,29 @@
 package net.mcmerdith.ormmicro;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class OrmMicroLogger {
-    private static OrmMicroLogger _instance;
+    private static Map<String, OrmMicroLogger> LOGGERS = new HashMap<>();
 
-    public static OrmMicroLogger instance() {
-        if (_instance == null) _instance = new OrmMicroLogger();
-        return _instance;
+    public static OrmMicroLogger QUERY_BUILDER = instance("Query Builder");
+    public static OrmMicroLogger MODEL_MAPPER = instance("Model Mapper");
+
+    public static OrmMicroLogger instance(String name) {
+        if (!LOGGERS.containsKey(name)) LOGGERS.put(name, new OrmMicroLogger(name));
+        return LOGGERS.get(name);
     }
 
-    private OrmMicroLogger() {
-        this(Logger.getLogger("MicroORM"));
+    private final String name;
+
+    private OrmMicroLogger(String name) {
+        this(name, Logger.getLogger("OrmMicro"));
     }
 
-    private OrmMicroLogger(Logger parentLogger) {
+    private OrmMicroLogger(String name, Logger parentLogger) {
+        this.name = name;
         this.parentLogger = parentLogger;
     }
 
@@ -27,6 +35,12 @@ public class OrmMicroLogger {
 
     public void setLogLevel(Level level) {
         this.parentLogger.setLevel(level);
+    }
+
+    public static void setLogLevels(Level level) {
+        for (OrmMicroLogger logger : LOGGERS.values()) {
+            logger.setLogLevel(level);
+        }
     }
 
     /**
@@ -109,7 +123,7 @@ public class OrmMicroLogger {
      * @param message The message to log
      */
     public void info(String message) {
-        parentLogger.info(message);
+        log(message, Level.INFO);
     }
 
     /**
@@ -119,7 +133,7 @@ public class OrmMicroLogger {
      * @param level   The log level
      */
     public void log(String message, Level level) {
-        parentLogger.log(level, message);
+        parentLogger.log(level, String.format("[OrmMicro] %s%s", (name == null) ? "" : "[" + name + "] ", message));
     }
 
     public void debug(String message) {
