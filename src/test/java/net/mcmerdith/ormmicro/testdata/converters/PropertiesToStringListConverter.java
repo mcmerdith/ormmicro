@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro.testconverters;
+package net.mcmerdith.ormmicro.testdata.converters;
 
 import net.mcmerdith.ormmicro.typing.AttributeConverter;
 

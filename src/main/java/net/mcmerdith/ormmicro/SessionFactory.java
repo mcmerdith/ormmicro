@@ -31,10 +31,20 @@ public class SessionFactory {
         return typeMapper;
     }
 
+    /*
+    Database
+     */
+
     private final HikariDataSource dataSource;
 
     protected HikariDataSource getDataSource() {
         return dataSource;
+    }
+
+    private final PersistenceContext persistenceContext = new PersistenceContext();
+
+    public PersistenceContext getPersistenceContext() {
+        return persistenceContext;
     }
 
     private SessionFactory(NameManager nameManager, SqlDialect dialect, ISqlTypeMapper typeMapper, HikariDataSource dataSource) {
@@ -71,7 +81,7 @@ public class SessionFactory {
         }
 
         public void addDataSourceProperties(Properties properties) {
-            hikariConfig.getDataSourceProperties().putAll(properties);
+            hikariConfig.setDataSourceProperties(properties);
         }
 
         public void setNamingStrategy(NamingStrategy strategy) {

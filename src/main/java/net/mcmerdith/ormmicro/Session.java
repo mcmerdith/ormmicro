@@ -28,6 +28,14 @@ public class Session implements AutoCloseable {
     }
 
     /**
+     * Direct access to this sessions JDBC connection
+     * @return The connection used by this session
+     */
+    public Connection getConnection() {
+        return connection;
+    }
+
+    /**
      * Begin a new transaction on the database
      * <p>If this session is already in a transaction, the existing transaction is committed before beginning</p>
      */
@@ -74,14 +82,6 @@ public class Session implements AutoCloseable {
         }
     }
 
-    private Connection connect() {
-        try {
-            return sessionFactory.getDataSource().getConnection();
-        } catch (SQLException e) {
-            throw OrmMicroLogger.instance().exception(e, "Failed to establish database connection", true);
-        }
-    }
-
     public void executeSql(String sql) throws SQLException {
         connection.createStatement().execute(sql);
     }
@@ -112,12 +112,19 @@ public class Session implements AutoCloseable {
         return s;
     }
 
-    public void persist(Object o) {
+    public void save(Object o) {
         MappedSqlModel<?> mappedModel = sessionFactory.getModelManager().mapObject(o);
+
+        if (sessionFactory.getPersistenceContext().isTracking(mappedModel)) {
+            // We will be doing an "update" query
+            update(mappedModel);
+            return;
+        }
+
 
     }
 
-    public void merge(Object o) {
+    private void update(MappedSqlModel<?> model) {
 
     }
 

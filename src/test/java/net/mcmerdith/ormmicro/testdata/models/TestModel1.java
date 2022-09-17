@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro.testmodels;
+package net.mcmerdith.ormmicro.testdata.models;
 
 import net.mcmerdith.ormmicro.annotations.*;
 import net.mcmerdith.ormmicro.typing.SqlDialect;

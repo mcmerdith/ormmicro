@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro.testconverters;
+package net.mcmerdith.ormmicro.testdata.converters;
 
 import net.mcmerdith.ormmicro.typing.AttributeConverter;
 import net.mcmerdith.ormmicro.util.StringUtils;
@@ -6,7 +6,6 @@ import net.mcmerdith.ormmicro.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
 public class StringListToStringConverter implements AttributeConverter<List<String>, String> {
     private static final String keyValueDelimeter = ";";

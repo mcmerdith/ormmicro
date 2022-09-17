@@ -1,51 +1,27 @@
 package net.mcmerdith.ormmicro;
 
-import com.zaxxer.hikari.HikariConfig;
 import net.mcmerdith.ormmicro.modeling.ColumnDefinition;
 import net.mcmerdith.ormmicro.modeling.MappedSqlModel;
 import net.mcmerdith.ormmicro.modeling.SqlModel;
-import net.mcmerdith.ormmicro.testmodels.TestModel1;
-import net.mcmerdith.ormmicro.testmodels.TestModel2;
+import net.mcmerdith.ormmicro.testdata.TestConfigurationManager;
+import net.mcmerdith.ormmicro.testdata.models.TestModel1;
+import net.mcmerdith.ormmicro.testdata.models.TestModel2;
 import net.mcmerdith.ormmicro.typing.ColumnType;
 import net.mcmerdith.ormmicro.typing.SqlType;
 import org.junit.Test;
-import org.sqlite.SQLiteDataSource;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TestModelManager {
-    private static final List<HikariConfig> configurations = new ArrayList<>();
-
-    static {
-        // Make the logs easier to read
-        System.setProperty("java.util.logging.SimpleFormatter.format",
-                "[%1$tF %1$tT] [%4$-7s] %5$s %n");
-
-        HikariConfig sqliteConfig = new HikariConfig();
-        sqliteConfig.setDriverClassName("org.sqlite.JDBC");
-        sqliteConfig.setJdbcUrl("jdbc:sqlite:signshop.db");
-        sqliteConfig.setMaximumPoolSize(1);
-        sqliteConfig.setMinimumIdle(1);
-        sqliteConfig.setPoolName("Schema");
-
-        configurations.add(sqliteConfig);
-    }
 
     @Test
     public void testModelManager() {
-        for (HikariConfig config : configurations) {
-            SessionFactory sessionFactory = new SessionFactory.Builder(config).build();
+        for (SessionFactory sessionFactory : TestConfigurationManager.getSessionFactories()) {
 
 //            try (Session session = sessionFactory.getCurrentSession()) {
 //                session.executeSql("CREATE TABLE IF NOT EXISTS test(id INTEGER PRIMARY KEY, test TEXT NOT NULL)");
@@ -142,12 +118,12 @@ public class TestModelManager {
         Foreign Key
          */
 
-            List<Object> fObjects = mappedModel1.getForeignObjects();
-
-            assertEquals("Only 2 Foreign Key Expected", 2, fObjects.size());
-            assertTrue("Expected Foreign Model to be TestModel2", fObjects.get(1) instanceof TestModel2);
-
-            MappedSqlModel<TestModel2> mappedModel2 = model2.mapObject((TestModel2) fObjects.get(1));
+//            List<Object> fObjects = mappedModel1.getForeignObjects();
+//
+//            assertEquals("Only 2 Foreign Key Expected", 2, fObjects.size());
+//            assertTrue("Expected Foreign Model to be TestModel2", fObjects.get(1) instanceof TestModel2);
+//
+//            MappedSqlModel<TestModel2> mappedModel2 = model2.mapObject((TestModel2) fObjects.get(1));
         }
     }
 }

@@ -1,10 +1,9 @@
-package net.mcmerdith.ormmicro.testmodels;
+package net.mcmerdith.ormmicro.testdata.models;
 
 import net.mcmerdith.ormmicro.annotations.Convert;
-import net.mcmerdith.ormmicro.annotations.ElementCollection;
 import net.mcmerdith.ormmicro.annotations.Id;
-import net.mcmerdith.ormmicro.testconverters.PropertiesToStringListConverter;
-import net.mcmerdith.ormmicro.testconverters.StringListToStringConverter;
+import net.mcmerdith.ormmicro.testdata.converters.PropertiesToStringListConverter;
+import net.mcmerdith.ormmicro.testdata.converters.StringListToStringConverter;
 
 import java.math.BigDecimal;
 import java.util.Properties;
