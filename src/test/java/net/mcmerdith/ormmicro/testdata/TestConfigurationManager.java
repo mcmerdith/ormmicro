@@ -1,7 +1,7 @@
 package net.mcmerdith.ormmicro.testdata;
 
 import com.zaxxer.hikari.HikariConfig;
-import net.mcmerdith.ormmicro.SessionFactory;
+import net.mcmerdith.ormmicro.internal.SessionFactory;
 
 import java.util.ArrayList;
 import java.util.List;

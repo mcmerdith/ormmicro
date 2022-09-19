@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro;
+package net.mcmerdith.ormmicro.internal;
 
 import net.mcmerdith.ormmicro.modeling.MappedSqlModel;
 import net.mcmerdith.ormmicro.modeling.SqlModel;

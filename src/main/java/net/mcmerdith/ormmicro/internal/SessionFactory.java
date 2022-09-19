@@ -1,16 +1,18 @@
-package net.mcmerdith.ormmicro;
+package net.mcmerdith.ormmicro.internal;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import net.mcmerdith.ormmicro.OrmMicroLogger;
 import net.mcmerdith.ormmicro.typing.GenericTypeMapper;
 import net.mcmerdith.ormmicro.typing.ISqlTypeMapper;
 import net.mcmerdith.ormmicro.typing.SqlDialect;
 
 import javax.annotation.Nonnull;
 import java.util.Properties;
+import java.util.Timer;
 import java.util.logging.Level;
 
-public class SessionFactory {
+public class SessionFactory implements AutoCloseable {
     /*
     Managers
      */
@@ -47,16 +49,28 @@ public class SessionFactory {
         return persistenceContext;
     }
 
+    private final Timer workerThread = new Timer();
+    public final DatabaseWorker worker;
+
+    /**
+     * Get the Database worker
+     */
+    public DatabaseWorker getWorker() {
+        return worker;
+    }
+
     private SessionFactory(NameManager nameManager, SqlDialect dialect, ISqlTypeMapper typeMapper, HikariDataSource dataSource) {
         this.nameManager = nameManager;
         this.modelManager = new ModelManager(this, dialect);
         this.typeMapper = typeMapper;
         this.dataSource = dataSource;
+        this.worker = new DatabaseWorker(this);
+        workerThread.scheduleAtFixedRate(this.worker, 2000, 250);
     }
 
     public void setLogLevel(Level level) {
         try {
-            OrmMicroLogger.instance().setLogLevel(level);
+            OrmMicroLogger.setLogLevels(level);
             dataSource.getParentLogger().setLevel(level);
         } catch (Exception ignored) {
         }
@@ -64,6 +78,12 @@ public class SessionFactory {
 
     public Session getCurrentSession() {
         return new Session(this);
+    }
+
+    @Override
+    public void close() {
+        worker.cancel();
+        workerThread.cancel();
     }
 
     public static class Builder {

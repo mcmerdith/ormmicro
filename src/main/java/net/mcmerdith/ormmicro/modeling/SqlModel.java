@@ -1,11 +1,12 @@
 package net.mcmerdith.ormmicro.modeling;
 
 import net.mcmerdith.ormmicro.OrmMicroLogger;
-import net.mcmerdith.ormmicro.SessionFactory;
 import net.mcmerdith.ormmicro.annotations.Model;
+import net.mcmerdith.ormmicro.internal.SessionFactory;
 import net.mcmerdith.ormmicro.util.StringUtils;
 
 import java.lang.reflect.Field;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,12 +39,32 @@ public class SqlModel<T> {
             tableName = modelClass.getSimpleName().toLowerCase();
         }
 
+        Map<String, ColumnDefinition> tempColumns = new LinkedHashMap<>();
+
         for (Field field : modelClass.getDeclaredFields()) {
-            processAnnotatedField(field);
+            ColumnDefinition tempColumn = processAnnotatedField(field);
+            if (tempColumn != null) tempColumns.put(field.getName(), tempColumn);
         }
 
+        // Sort the columns, putting primary and unique keys first
+        columnDefinitions.putAll(
+                tempColumns.entrySet().stream()
+                        .sorted(
+                                Comparator.comparing(
+                                        (Map.Entry<String, ColumnDefinition> e) -> e.getValue().isPrimary()
+                                ).thenComparing(
+                                        e -> e.getValue().isUnique()
+                                )
+                        )
+                        .collect(
+                                LinkedHashMap<String, ColumnDefinition>::new,
+                                (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+                                LinkedHashMap::putAll
+                        )
+        );
+
         if (columnDefinitions.values().stream().filter(ColumnDefinition::isPrimary).count() > 1) {
-            throw OrmMicroLogger.instance().exception(null, "Model " + tableName + " has more than 1 primary key!", true);
+            throw OrmMicroLogger.MODEL_MAPPER.exception(null, "Model " + tableName + " has more than 1 primary key!", true);
         }
     }
 
@@ -56,13 +77,13 @@ public class SqlModel<T> {
      *
      * @param annotated The annotated field
      */
-    private void processAnnotatedField(Field annotated) {
+    private ColumnDefinition processAnnotatedField(Field annotated) {
         ColumnDefinition column = new ColumnDefinition(session, this, annotated);
 
         // Don't track transient columns
-        if (column.isTransient()) return;
+        if (column.isTransient()) return null;
 
-        columnDefinitions.put(annotated.getName(), column);
+        return column;
     }
 
     public String getTableName() {

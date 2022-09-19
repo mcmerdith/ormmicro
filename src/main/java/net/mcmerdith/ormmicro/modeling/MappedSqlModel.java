@@ -1,10 +1,9 @@
 package net.mcmerdith.ormmicro.modeling;
 
 import net.mcmerdith.ormmicro.OrmMicroLogger;
-import net.mcmerdith.ormmicro.SessionFactory;
+import net.mcmerdith.ormmicro.internal.SessionFactory;
 import net.mcmerdith.ormmicro.exceptions.SqlConstraintViolation;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,7 +56,7 @@ public class MappedSqlModel<T> {
                     nonNullValues = valueStream.map(v -> {
                         Object converted = column.convertJavaToSql(v);
                         if (converted == null) {
-                            OrmMicroLogger.instance().error("Conversion error on field " + field);
+                            OrmMicroLogger.MODEL_MAPPER.error("Conversion error on field " + field);
                             return null;
                         }
                         return converted;
@@ -84,7 +83,7 @@ public class MappedSqlModel<T> {
                     columns.put(field, nonNullValues.stream().findFirst().orElse(null));
                 }
             } catch (Exception e) {
-                OrmMicroLogger.instance().exception(e,
+                OrmMicroLogger.MODEL_MAPPER.exception(e,
                         String.format("Model for table `%s` mapped field '%s' -> column `%s` which does not exist on the mapped class '%s'",
                                 model.getTableName(),
                                 field,

@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro.query;
+package net.mcmerdith.ormmicro.query.comparison;
 
 import net.mcmerdith.ormmicro.modeling.ColumnDefinition;
 import net.mcmerdith.ormmicro.modeling.MappedSqlModel;
@@ -6,7 +6,6 @@ import net.mcmerdith.ormmicro.modeling.SqlModel;
 import net.mcmerdith.ormmicro.util.StringUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SqlComparisonBuilder {
     private final ComparisonLogic logic;
@@ -19,7 +18,6 @@ public class SqlComparisonBuilder {
     }
 
     /**
-     *
      * @param fieldName
      * @param operator
      * @param value
@@ -67,6 +65,7 @@ public class SqlComparisonBuilder {
 
     /**
      * Embed another comparison inside this one
+     *
      * @param embeddedComparison The comparison
      */
     public SqlComparisonBuilder where(SqlComparisonBuilder embeddedComparison) {
@@ -83,6 +82,7 @@ public class SqlComparisonBuilder {
 
     /**
      * Add all field -> value relations from a model to this query
+     *
      * @param model The model to find
      */
     public SqlComparisonBuilder whereMatches(MappedSqlModel<?> model) {
@@ -104,6 +104,7 @@ public class SqlComparisonBuilder {
 
     /**
      * Find rows where the ID matches a value
+     *
      * @param model The model to find
      * @param value The ID value to check
      */

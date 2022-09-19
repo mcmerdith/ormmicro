@@ -1,5 +1,7 @@
 package net.mcmerdith.ormmicro;
 
+import net.mcmerdith.ormmicro.internal.ModelManager;
+import net.mcmerdith.ormmicro.internal.SessionFactory;
 import net.mcmerdith.ormmicro.modeling.ColumnDefinition;
 import net.mcmerdith.ormmicro.modeling.MappedSqlModel;
 import net.mcmerdith.ormmicro.modeling.SqlModel;

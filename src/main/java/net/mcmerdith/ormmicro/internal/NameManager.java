@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro;
+package net.mcmerdith.ormmicro.internal;
 
 public class NameManager {
     private static final NamingStrategy NO_OP = new NamingStrategy() {

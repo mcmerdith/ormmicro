@@ -10,6 +10,7 @@ public class OrmMicroLogger {
 
     public static OrmMicroLogger QUERY_BUILDER = instance("Query Builder");
     public static OrmMicroLogger MODEL_MAPPER = instance("Model Mapper");
+    public static OrmMicroLogger DATABASE_WORKER = instance("Database Worker");
 
     public static OrmMicroLogger instance(String name) {
         if (!LOGGERS.containsKey(name)) LOGGERS.put(name, new OrmMicroLogger(name));

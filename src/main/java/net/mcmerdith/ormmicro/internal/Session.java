@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro;
+package net.mcmerdith.ormmicro.internal;
 
 import net.mcmerdith.ormmicro.modeling.MappedSqlModel;
 
@@ -25,6 +25,14 @@ public class Session implements AutoCloseable {
         } catch (Exception e) {
             throw new RuntimeException("Could not create session, failed to connect to database!", e);
         }
+    }
+
+    /**
+     * Direct access to the SessionFactory
+     * @return The SessionFactory that built this Session
+     */
+    public SessionFactory getFactory() {
+        return sessionFactory;
     }
 
     /**
@@ -133,8 +141,10 @@ public class Session implements AutoCloseable {
     }
 
     @Override
-    public void close() throws SQLException {
+    public void close() {
         if (transaction) commitTransaction();
-        connection.close();
+        try {
+            connection.close();
+        } catch (SQLException ignored) {}
     }
 }

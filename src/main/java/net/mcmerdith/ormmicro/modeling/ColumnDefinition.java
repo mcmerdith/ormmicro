@@ -1,7 +1,7 @@
 package net.mcmerdith.ormmicro.modeling;
 
 import net.mcmerdith.ormmicro.OrmMicroLogger;
-import net.mcmerdith.ormmicro.SessionFactory;
+import net.mcmerdith.ormmicro.internal.SessionFactory;
 import net.mcmerdith.ormmicro.annotations.*;
 import net.mcmerdith.ormmicro.typing.AttributeConverter;
 import net.mcmerdith.ormmicro.typing.ColumnType;
@@ -11,13 +11,14 @@ import net.mcmerdith.ormmicro.util.StringUtils;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ColumnDefinition {
+    private static final OrmMicroLogger logger = OrmMicroLogger.MODEL_MAPPER;
+
     /*
     Column Definition
      */
@@ -33,7 +34,7 @@ public class ColumnDefinition {
     Typing
      */
 
-    // Implicit annotatedField.getType();
+    // Implicit type = annotatedField.getType();
     private Class<?> convertedType = null;
     private Class<?> collectionType = null;
 
@@ -251,6 +252,10 @@ public class ColumnDefinition {
         }
     }
 
+    /*
+    Annotation Processing
+     */
+
     private void processElementCollectionAnnotation(@Nullable ElementCollection elementCollection) {
         if (elementCollection == null) return;
 
@@ -395,19 +400,20 @@ public class ColumnDefinition {
     }
 
     private void annotationError(String annotation, String error) {
-        OrmMicroLogger.instance().error(
+        logger.error(
                 String.format(
-                        "%s annotation cannot be applied to %s. %s %s",
+                        "%s annotation cannot be applied to %s on `%s`. %s %s",
                         annotation,
                         columnName == null ? String.format("field '%s'", annotatedField.getName())
                                 : String.format("column `%s`", columnName),
+                        model.getTableName(),
                         annotation,
                         error)
         );
     }
 
     /*
-     * Getters
+    Getters
      */
 
     /**
@@ -453,6 +459,10 @@ public class ColumnDefinition {
         return definition.toString();
     }
 
+    /*
+    Constraints
+     */
+
     public List<SqlConstraint> getConstraints() {
         List<SqlConstraint> constraints = new ArrayList<>();
 
@@ -491,8 +501,35 @@ public class ColumnDefinition {
         return unique;
     }
 
+    /*
+    Foreign Key
+     */
+
     public boolean isForeignKey() {
         return foreign;
+    }
+
+    public String getForeignTable() {
+        if (foreignReferencedColumnDefinition != null) return foreignReferencedColumnDefinition.getForeignTable();
+        String[] parsed = parseReference();
+        if (parsed.length < 2) return null;
+        return parsed[0];
+    }
+
+    public String getForeignColumn() {
+        if (foreignReferencedColumnDefinition != null) return foreignReferencedColumnDefinition.getForeignColumn();
+        String[] parsed = parseReference();
+        if (parsed.length < 2) return null;
+        return parsed[1];
+    }
+
+    private static final Pattern referencePattern = Pattern.compile("(\\S+)\\((\\S+)\\)");
+
+    private String[] parseReference() {
+        if (StringUtils.isBlank(foreignReference)) return new String[0];
+        Matcher referenceMatcher = referencePattern.matcher(foreignReference);
+        if (!referenceMatcher.find()) return new String[0];
+        return new String[]{referenceMatcher.group(1), referenceMatcher.group(2)};
     }
 
     public String getForeignReference() {
@@ -506,6 +543,10 @@ public class ColumnDefinition {
         return foreignReferencedColumnDefinition;
     }
 
+    /*
+    Properties
+     */
+
     public boolean isTransient() {
         return isTransient;
     }
@@ -513,6 +554,10 @@ public class ColumnDefinition {
     public EnumStorage.Mode getEnumStorageMode() {
         return enumStorageMode;
     }
+
+    /*
+    Collections
+     */
 
     public boolean isArray() {
         return array;
@@ -547,7 +592,7 @@ public class ColumnDefinition {
             // Get the referenced field on the foreign object
             return annotatedField.get(o);
         } catch (Exception e) {
-            OrmMicroLogger.instance().exception(e,
+            logger.exception(e,
                     String.format("Failed to get field `%s` on type '%s'",
                             annotatedField.getName(),
                             o.getClass().getSimpleName()));
@@ -617,14 +662,14 @@ public class ColumnDefinition {
                 try {
                     return constants[Integer.parseInt(result.toString())];
                 } catch (IndexOutOfBoundsException e) {
-                    OrmMicroLogger.instance().error(
+                    logger.error(
                             String.format("Enum '%s' does not contain ordinal %s",
                                     getFieldType().getTypeName(),
                                     result)
                     );
                     return null;
                 } catch (NumberFormatException e) {
-                    OrmMicroLogger.instance().error(
+                    logger.error(
                             String.format("'%s' is not a valid ordinal constant for Enum '%s'. Matching by name()",
                                     result,
                                     getFieldType().getTypeName())
@@ -638,12 +683,12 @@ public class ColumnDefinition {
                         String name = (String) nameMethod.invoke(constant);
                         if (name.equals(result)) return constant;
                     } catch (NoSuchMethodException e) {
-                        OrmMicroLogger.instance().error(
+                        logger.error(
                                 String.format("Enum constant for '%s' does not provide a name() method",
                                         constant.getClass().getTypeName())
                         );
                     } catch (IllegalAccessException | InvocationTargetException e) {
-                        OrmMicroLogger.instance().exception(e,
+                        logger.exception(e,
                                 String.format("Error getting name of Enum '%s'",
                                         constant.getClass().getTypeName())
                         );
@@ -666,7 +711,7 @@ public class ColumnDefinition {
                 String t0 = generics[0] == null ? "Unknown" : generics[0].getTypeName();
                 String t1 = generics[1] == null ? "Unknown" : generics[1].getTypeName();
 
-                OrmMicroLogger.instance().exception(e, String.format("Failed to convert type '%s' using '%s' -> '%s'", o.getClass().getSimpleName(), t0, t1));
+                logger.exception(e, String.format("Failed to convert type '%s' using '%s' -> '%s'", o.getClass().getSimpleName(), t0, t1));
                 return null;
             }
         }

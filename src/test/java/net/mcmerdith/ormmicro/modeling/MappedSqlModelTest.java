@@ -1,6 +1,6 @@
 package net.mcmerdith.ormmicro.modeling;
 
-import net.mcmerdith.ormmicro.SessionFactory;
+import net.mcmerdith.ormmicro.internal.SessionFactory;
 import net.mcmerdith.ormmicro.testdata.TestConfigurationManager;
 import net.mcmerdith.ormmicro.annotations.Id;
 import net.mcmerdith.ormmicro.annotations.Model;

@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro;
+package net.mcmerdith.ormmicro.internal;
 
 public interface NamingStrategy {
     String applyForColumn(String columnName);

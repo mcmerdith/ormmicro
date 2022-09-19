@@ -1,4 +1,4 @@
-package net.mcmerdith.ormmicro.query;
+package net.mcmerdith.ormmicro.query.comparison;
 
 public enum ComparisonLogic {
     AND,
